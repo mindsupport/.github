@@ -1,0 +1,28 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# Workflow Template: PR Review
+#
+# This file lives at:
+#   mindsupport/.github/workflow-templates/pr-review.yml
+#
+# It is a STARTER TEMPLATE. When anyone in the mindsupport org goes to
+# Actions → New Workflow, this template appears under "mindsupport" as
+# "PR Review". They click "Configure" and it's pre-filled in their repo.
+#
+# For automatic enforcement (no opt-in required), see:
+#   docs/org-workflow-setup.md → "Required Workflows"
+# ─────────────────────────────────────────────────────────────────────────────
+
+name: PR Review
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  review:
+    name: Typecheck · Lint · Test · Build
+    uses: mindsupport/.github/.github/workflows/pr-review-reusable.yml@main
+    with:
+      node-version: '22'
+      run-build: true
+      generate-tokens: false   # set true for projects that use npm run generate-tokens

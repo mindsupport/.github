@@ -1,0 +1,6 @@
+{
+  "name": "PR Review",
+  "description": "Runs typecheck, lint, unit tests, and optionally a production build on every pull request. Calls the shared mindsupport org reusable workflow.",
+  "iconName": "octicon workflow",
+  "categories": ["CI", "Testing"]
+}
