@@ -1,0 +1,58 @@
+name: Propagate Org Workflows
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/claude-code-review.yml'
+      - '.github/workflows/claude.yml'
+
+jobs:
+  propagate:
+    name: Push updated workflows to all org repos
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Propagate changed workflows
+        env:
+          GH_TOKEN: ${{ secrets.PROPAGATE_TOKEN }}
+          ORG: mindsupport
+        run: |
+          # Repos to propagate to (excludes .github itself and mavunabora which is source)
+          REPOS="bridgetabazile civicp-bene-app civitas-compliance flowcaptureai \
+                 loot-swap onlinedirectory pigevilweb mavuno-bora-field \
+                 myrmidondeals myrmidonweb general mavunabora"
+
+          # Detect which workflow files changed in this push
+          CHANGED=$(git diff --name-only HEAD~1 HEAD -- .github/workflows/ 2>/dev/null \
+                    || git diff --name-only HEAD^ HEAD -- .github/workflows/ 2>/dev/null \
+                    || echo ".github/workflows/claude-code-review.yml .github/workflows/claude.yml")
+
+          for repo in $REPOS; do
+            echo "── $repo ──"
+            for filepath in $CHANGED; do
+              fname=$(basename "$filepath")
+              [ ! -f "$filepath" ] && continue
+
+              ENCODED=$(base64 -w0 < "$filepath")
+              SHA=$(gh api "repos/${ORG}/${repo}/contents/.github/workflows/${fname}" \
+                    --jq '.sha' 2>/dev/null || echo "")
+
+              EXTRA=""
+              [ -n "$SHA" ] && EXTRA="--field sha=$SHA"
+
+              if gh api -X PUT "repos/${ORG}/${repo}/contents/.github/workflows/${fname}" \
+                   --field message="chore(workflows): sync ${fname} from org .github" \
+                   --field content="$ENCODED" \
+                   $EXTRA > /dev/null 2>&1; then
+                echo "  ✅ $fname"
+              else
+                echo "  ❌ $fname — update failed"
+              fi
+            done
+          done
