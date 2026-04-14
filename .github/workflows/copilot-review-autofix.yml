@@ -1,0 +1,36 @@
+name: Auto-fix Copilot Review
+
+on:
+  pull_request_review:
+    types: [submitted]
+
+jobs:
+  autofix:
+    # Only fire when Copilot submits a review with comments
+    if: github.event.review.user.login == 'copilot-pull-request-reviewer[bot]' && github.event.review.state == 'commented'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: read
+      id-token: write
+      actions: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Run Claude Code to fix Copilot review comments
+        uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          additional_permissions: |
+            actions: read
+          prompt: |
+            A Copilot code review has just been submitted on this pull request.
+            Read all the Copilot review comments carefully using the GitHub tools available to you.
+            For each comment that identifies a real issue, fix it in the code.
+            Ignore comments that are purely stylistic preferences or that you disagree with — only fix genuine bugs, security issues, or clear code quality problems.
+            After fixing, commit your changes with a message that references the Copilot review comments you addressed.
+            Do not ask for confirmation. Just read, fix, and commit.

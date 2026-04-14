@@ -1,8 +1,8 @@
-name: Request Copilot Re-Review
+name: Request Copilot Review
 
 on:
   pull_request:
-    types: [synchronize]
+    types: [opened, synchronize]
 
 jobs:
   request-copilot-review:
@@ -10,11 +10,13 @@ jobs:
     permissions:
       pull-requests: write
     steps:
-      - name: Request Copilot re-review on new commits
+      - name: Request Copilot review
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          REPO: ${{ github.repository }}
         run: |
           gh api \
             --method POST \
-            /repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/requested_reviewers \
-            -f "reviewers[]=copilot-pull-request-reviewer"
+            "/repos/${REPO}/pulls/${PR_NUMBER}/requested_reviewers" \
+            -f "reviewers[]=copilot-pull-request-reviewer[bot]"
